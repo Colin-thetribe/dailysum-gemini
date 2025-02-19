@@ -18,7 +18,7 @@ Vous connaissez ce moment où :
 npm install
 # Copiez le .env.example en .env
 cp .env.example .env
-# Ajoutez votre clé API Gemini (si vous n'avez pas la flemme)
+# Ajoutez votre clé API Gemini (si vous n'avez pas la flemme) trouvable ici : https://aistudio.google.com/app/apikey?hl=fr
 ```
 
 ## 💤 Utilisation
