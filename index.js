@@ -15,6 +15,8 @@ const args = process.argv.slice(2);
 const isPR = args.includes("--pr");
 const isDailySum = args.includes("--dailyseum");
 
+console.log("PROJECTS_TO_SUMMARIZE", PROJECTS_TO_SUMMARIZE);
+
 if (!isPR && !isDailySum) {
   console.error(
     "Je sais que t'as la flemme, mais précise au moins --pr ou --dailyseum"
@@ -25,13 +27,26 @@ if (!isPR && !isDailySum) {
 const DAILY_SUM_PROMPT =
   "A partir de ces fichiers fournies represenant mon bash history, mon git diff et mon git log, genere moi le résumé de ma journée sous la forme du deuxieme fichier en français";
 const PR_PROMPT =
-  "A partir de ces fichiers fournies represenant mon bash history, mon git diff et mon git log, genere moi la pull request github sous la forme du deuxieme fichier en français";
+  "A partir de ces fichiers fournies represenant mon bash history, mon git diff et mon git log, genere moi la pull request github sous la forme du deuxieme fichier en français en mettant de jolie petites icones";
 
 async function generateDailySum() {
   const genAI = new GoogleGenerativeAI(API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   const prompt = isDailySum ? DAILY_SUM_PROMPT : PR_PROMPT;
+
+  if (!getGitHistory().length || !getCurrentBranchGitHistory().length) {
+    console.error("Aucun historique de git trouvé");
+    process.exit(1);
+  }
+  if (!getDailysum().length) {
+    console.error("Aucun résumé de journée trouvé");
+    process.exit(1);
+  }
+  if (!getPR().length) {
+    console.error("Aucune pull request trouvée");
+    process.exit(1);
+  }
 
   const request = {
     contents: [
@@ -80,11 +95,13 @@ function getPR() {
 
 function getCurrentBranchGitHistory() {
   const { execSync } = require("child_process");
-  const gitLog = execSync(
-    `cd ${PROJECTS_TO_SUMMARIZE} && git log --since="24 hours ago" --pretty=format:"%h - %an, %ar : %s"`,
+
+  const gitDiffCurrentBranchDevelop = execSync(
+    `cd ${PROJECTS_TO_SUMMARIZE} && git diff develop`,
     { encoding: "utf8" }
   );
-  return Buffer.from(gitLog).toString("base64");
+
+  return Buffer.from(gitDiffCurrentBranchDevelop).toString("base64");
 }
 
 function getGitHistory() {
