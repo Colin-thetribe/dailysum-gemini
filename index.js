@@ -5,33 +5,52 @@ const {
 } = require("@google/generative-ai");
 const fs = require("fs");
 const dotenv = require("dotenv");
-dotenv.config();
+const path = require("path");
 
+dotenv.config({ path: path.join(__dirname, ".env") });
 const API_KEY = process.env.API_KEY;
-const PROJECTS_TO_SUMMARIZE = process.env.PROJECTS_TO_SUMMARIZE;
+const PROJECTS_TO_SUMMARIZE = process.cwd();
+
+const args = process.argv.slice(2);
+const isPR = args.includes("--pr");
+const isDailySum = args.includes("--dailyseum");
+
+if (!isPR && !isDailySum) {
+  console.error(
+    "Je sais que t'as la flemme, mais précise au moins --pr ou --dailyseum"
+  );
+  process.exit(1);
+}
+
+const DAILY_SUM_PROMPT =
+  "A partir de ces fichiers fournies represenant mon bash history, mon git diff et mon git log, genere moi le résumé de ma journée sous la forme du deuxieme fichier en français";
+const PR_PROMPT =
+  "A partir de ces fichiers fournies represenant mon bash history, mon git diff et mon git log, genere moi la pull request github sous la forme du deuxieme fichier en français";
 
 async function generateDailySum() {
   const genAI = new GoogleGenerativeAI(API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const prompt = isDailySum ? DAILY_SUM_PROMPT : PR_PROMPT;
 
   const request = {
     contents: [
       {
         parts: [
           {
-            text: "A partir de ces fichiers fournies represenant mon bash history, mon git diff et mon git log, genere moi le résumé de ma journée sous la forme du deuxieme fichier",
+            text: prompt,
           },
 
           {
             inline_data: {
               mime_type: "text/plain",
-              data: getGitHistory(),
+              data: isDailySum ? getGitHistory() : getCurrentBranchGitHistory(),
             },
           },
           {
             inline_data: {
               mime_type: "text/plain",
-              data: getDailysum(),
+              data: isDailySum ? getDailysum() : getPR(),
             },
           },
         ],
@@ -44,8 +63,28 @@ async function generateDailySum() {
 }
 
 function getDailysum() {
-  const bashHistory = fs.readFileSync("dailysum.md", "utf8");
+  const bashHistory = fs.readFileSync(
+    path.join(__dirname, "templates", "dailysum.md"),
+    "utf8"
+  );
   return Buffer.from(bashHistory).toString("base64");
+}
+
+function getPR() {
+  const bashHistory = fs.readFileSync(
+    path.join(__dirname, "templates", "pr.md"),
+    "utf8"
+  );
+  return Buffer.from(bashHistory).toString("base64");
+}
+
+function getCurrentBranchGitHistory() {
+  const { execSync } = require("child_process");
+  const gitLog = execSync(
+    `cd ${PROJECTS_TO_SUMMARIZE} && git log --since="24 hours ago" --pretty=format:"%h - %an, %ar : %s"`,
+    { encoding: "utf8" }
+  );
+  return Buffer.from(gitLog).toString("base64");
 }
 
 function getGitHistory() {
