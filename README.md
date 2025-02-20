@@ -1,5 +1,9 @@
 # 🦥 FlemmAI - Votre Assistant Anti-Flemme
 
+![Build Status](https://github.com/votre-repo/flemmai/workflows/Build%20FlemmAI/badge.svg)
+![Latest Release](https://img.shields.io/github/v/release/votre-repo/flemmai)
+![License](https://img.shields.io/github/license/votre-repo/flemmai)
+
 > Parce que même la flemme mérite d'être automatisée.
 
 ## 🤔 Pourquoi ?
@@ -156,6 +160,10 @@ alias flemmai="~/.flemmai/flemmai"
 ### Structure du projet
 ```
 flemmai/
+├── .github/            # GitHub Actions workflows
+│   └── workflows/
+│       ├── build.yml
+│       └── release.yml
 ├── dist/               # Binaires générés
 ├── templates/          # Templates Markdown
 │   ├── dailysum.md
