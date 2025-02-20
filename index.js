@@ -17,6 +17,10 @@ if (!API_KEY) {
   process.exit(1);
 }
 
+// Parse command line arguments
+const args = process.argv.slice(2);
+const hasFlag = flag => args.includes(flag);
+
 async function generateContent(isDailySum, userAnswers = {}) {
   // Filter out empty or negative answers
   const filteredAnswers = Object.fromEntries(
@@ -79,7 +83,25 @@ async function generateContent(isDailySum, userAnswers = {}) {
   }
 }
 
+async function promptQuestions() {
+  console.log('\n📝 Quelques questions pour enrichir votre résumé quotidien:');
+  return inquirer.prompt(DAILY_QUESTIONS);
+}
+
 async function main() {
+  // Check for command line arguments first
+  if (hasFlag('--pr')) {
+    await generateContent(false);
+    return;
+  }
+  
+  if (hasFlag('--dailyseum')) {
+    // Generate daily summary without questions when using --dailyseum flag
+    await generateContent(true, {});
+    return;
+  }
+
+  // If no arguments, use interactive mode
   const { choice } = await inquirer.prompt([
     {
       type: 'list',
@@ -93,12 +115,26 @@ async function main() {
   ]);
 
   if (choice === 'daily') {
-    console.log('\n📝 Quelques questions pour enrichir votre résumé quotidien:');
-    const answers = await inquirer.prompt(DAILY_QUESTIONS);
+    const answers = await promptQuestions();
     await generateContent(true, answers);
   } else {
     await generateContent(false);
   }
+}
+
+// Update help message
+if (hasFlag('--help') || hasFlag('-h')) {
+  console.log(`
+Usage: node index.js [options]
+
+Options:
+  --dailyseum  Générer un résumé quotidien rapide (sans questionnaire)
+  --pr         Générer une description de PR
+  --help,-h    Afficher cette aide
+
+Sans option, lance le mode interactif avec questionnaire.
+  `);
+  process.exit(0);
 }
 
 main().catch(error => {
