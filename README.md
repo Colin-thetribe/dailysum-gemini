@@ -46,9 +46,61 @@ npm run build:all
 ```
 
 Les binaires seront générés dans le dossier `dist/` :
-- `dist/flemmai-linux` pour les pingouins
-- `dist/flemmai-macos` pour les pommes
-- `dist/flemmai-win.exe` pour les fenêtres
+- `dist/flemmai-linux` pour les pingouins 🐧
+- `dist/flemmai-macos` pour les pommes 🍎
+- `dist/flemmai-win.exe` pour les fenêtres 🪟
+
+### Installation dans le PATH
+
+#### Linux/MacOS 🐧 🍎
+
+```bash
+# Créez le dossier d'installation
+mkdir -p ~/.flemmai
+mkdir -p ~/.flemmai/templates
+
+# Copiez le binaire (remplacez XXX par linux ou macos)
+cp dist/flemmai-XXX ~/.flemmai/flemmai
+
+# Copiez les templates
+cp templates/* ~/.flemmai/templates/
+
+# Rendez le binaire exécutable
+chmod +x ~/.flemmai/flemmai
+
+# Créez un lien symbolique (nécessite sudo)
+sudo ln -s ~/.flemmai/flemmai /usr/local/bin/flemmai
+
+# OU ajoutez ceci à votre ~/.bashrc ou ~/.zshrc
+export PATH="$HOME/.flemmai:$PATH"
+```
+
+#### Windows 🪟
+
+```powershell
+# Créez le dossier d'installation (PowerShell)
+New-Item -ItemType Directory -Path "$env:USERPROFILE\.flemmai"
+New-Item -ItemType Directory -Path "$env:USERPROFILE\.flemmai\templates"
+
+# Copiez le binaire
+Copy-Item "dist\flemmai-win.exe" "$env:USERPROFILE\.flemmai\flemmai.exe"
+
+# Copiez les templates
+Copy-Item "templates\*" "$env:USERPROFILE\.flemmai\templates"
+
+# Ajoutez au PATH utilisateur (PowerShell Admin)
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+[Environment]::SetEnvironmentVariable("Path", $userPath + ";$env:USERPROFILE\.flemmai", "User")
+```
+
+Ou pour les flemmards de Windows :
+1. Appuyez sur Win + R
+2. Tapez "systempropertiesadvanced"
+3. Cliquez sur "Variables d'environnement"
+4. Dans "Variables utilisateur", sélectionnez "Path"
+5. Cliquez sur "Nouveau"
+6. Ajoutez le chemin vers votre dossier `.flemmai`
+7. Validez avec beaucoup de "OK"
 
 ## 💤 Utilisation
 
