@@ -1,144 +1,107 @@
-const {
-  GoogleGenerativeAI,
-  GenerateContentRequest,
-  ContentType,
-} = require("@google/generative-ai");
-const fs = require("fs");
-const dotenv = require("dotenv");
-const path = require("path");
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const inquirer = require('inquirer');
+const dotenv = require('dotenv');
+const path = require('path');
+const fs = require('fs');
 
-dotenv.config({ path: path.join(__dirname, ".env") });
+const { PR_PROMPT, DAILY_SUM_PROMPT, DAILY_QUESTIONS } = require('./prompts');
+const { getGitHistory, getCurrentBranchGitHistory } = require('./gitUtils');
+const { getDailysum, getPR } = require('./fileUtils');
+
+// Configuration
+dotenv.config({ path: path.join(__dirname, '.env') });
 const API_KEY = process.env.API_KEY;
-const PROJECTS_TO_SUMMARIZE = process.cwd();
 
-const args = process.argv.slice(2);
-const isPR = args.includes("--pr");
-const isDailySum = args.includes("--dailyseum");
-
-console.log("PROJECTS_TO_SUMMARIZE", PROJECTS_TO_SUMMARIZE);
-if (!isPR && !isDailySum) {
-  console.error(
-    "Je sais que t'as la flemme, mais précise au moins --pr ou --dailyseum"
-  );
+if (!API_KEY) {
+  console.error('❌ La clé API n\'est pas définie dans le fichier .env');
   process.exit(1);
 }
-const DAILY_SUM_PROMPT =
-  "À partir des fichiers fournis représentant mon historique de commandes Bash, mon git diff et mon git log, génère-moi le résumé de ma journée sous la forme du deuxième fichier en français.";
 
-const PR_PROMPT =
-  "À partir des fichiers fournis représentant mon historique de commandes Bash, mon git diff et mon git log, génère-moi une description de pull request pour GitHub, rédigée en français et bien structurée. \
-  Formate le résultat de manière lisible, en t'inspirant de la structure du deuxième fichier fourni. \
-  Ajoute des petites icônes pertinentes pour rendre la présentation plus attractive. \
-  Assure-toi que la description contient : \
-  - Un résumé clair et concis des modifications apportées. \
-  - Une liste des principales améliorations, corrections de bugs ou ajouts de fonctionnalités. \
-  - Une section expliquant pourquoi ces changements sont nécessaires. \
-  - Un éventuel rappel des tickets ou issues liés. \
-  - Une section pour les tests effectués. \
-  Utilise un ton professionnel mais engageant.";
+async function generateContent(isDailySum, userAnswers = {}) {
+  // Filter out empty or negative answers
+  const filteredAnswers = Object.fromEntries(
+    Object.entries(userAnswers).filter(([_, value]) => {
+      const cleanValue = value.trim().toLowerCase();
+      return cleanValue && !['non', 'no', 'rien', 'none'].includes(cleanValue);
+    })
+  );
 
-async function generateDailySum() {
   const genAI = new GoogleGenerativeAI(API_KEY);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
+  const gitHistory = isDailySum ? getGitHistory() : getCurrentBranchGitHistory();
+  const template = isDailySum ? getDailysum() : getPR();
   const prompt = isDailySum ? DAILY_SUM_PROMPT : PR_PROMPT;
 
-  if (!getGitHistory().length || !getCurrentBranchGitHistory().length) {
-    console.error("Aucun historique de git trouvé");
-    process.exit(1);
-  }
-  if (!getDailysum().length) {
-    console.error("Aucun résumé de journée trouvé");
-    process.exit(1);
-  }
-  if (!getPR().length) {
-    console.error("Aucune pull request trouvée");
-    process.exit(1);
+  if (!gitHistory) {
+    console.error('❌ Impossible de récupérer l\'historique Git');
+    return;
   }
 
   const request = {
-    contents: [
-      {
-        parts: [
-          {
-            text: prompt,
-          },
-
-          {
-            inline_data: {
-              mime_type: "text/plain",
-              data: isDailySum ? getGitHistory() : getCurrentBranchGitHistory(),
-            },
-          },
-          {
-            inline_data: {
-              mime_type: "text/plain",
-              data: isDailySum ? getDailysum() : getPR(),
-            },
-          },
-        ],
-      },
-    ],
+    contents: [{
+      parts: [
+        { text: prompt },
+        {
+          inline_data: {
+            mime_type: 'text/plain',
+            data: gitHistory
+          }
+        },
+        {
+          inline_data: {
+            mime_type: 'text/plain',
+            data: template
+          }
+        },
+        // Add only non-empty user answers if it's a daily summary
+        ...(isDailySum && Object.keys(filteredAnswers).length > 0 
+          ? [{ text: `\nRéponses de l'utilisateur:\n${JSON.stringify(filteredAnswers, null, 2)}` }] 
+          : [])
+      ]
+    }]
   };
 
-  const result = await model.generateContent(request);
-  console.log(result.response.text());
-}
-
-function getDailysum() {
-  const bashHistory = fs.readFileSync(
-    path.join(__dirname, "templates", "dailysum.md"),
-    "utf8"
-  );
-  return Buffer.from(bashHistory).toString("base64");
-}
-
-function getPR() {
-  const bashHistory = fs.readFileSync(
-    path.join(__dirname, "templates", "pr.md"),
-    "utf8"
-  );
-  return Buffer.from(bashHistory).toString("base64");
-}
-
-function getCurrentBranchGitHistory() {
-  const { execSync } = require("child_process");
-
-  const gitDiffCurrentBranchDevelop = execSync(
-    `cd ${PROJECTS_TO_SUMMARIZE} && git diff develop`,
-    { encoding: "utf8", maxBuffer: 10048577 }
-  );
-
-  //substr to 800000 tokens
-  const amputed = gitDiffCurrentBranchDevelop.substring(0, 800000);
-
-  return Buffer.from(amputed).toString("base64");
-}
-
-function getGitHistory() {
-  const { execSync } = require("child_process");
-
-  let allHistory = "";
-
   try {
-    // Obtenir l'historique Git des dernières 24 heures
-    const gitLog = execSync(
-      `cd ${PROJECTS_TO_SUMMARIZE} && git log --since="24 hours ago" --pretty=format:"%h - %an, %ar : %s"`,
-      { encoding: "utf8" }
-    );
+    const result = await model.generateContent(request);
+    const content = result.response.text();
+    console.log(content);
 
-    // Obtenir les différences Git
-    const gitDiff = execSync(`cd ${PROJECTS_TO_SUMMARIZE} && git diff`, {
-      encoding: "utf8",
-    });
-
-    allHistory += `\nCommits récents:\n${gitLog}\n`;
-    allHistory += `\nModifications en cours:\n${gitDiff}\n`;
+    // Save to file
+    const fileName = isDailySum ? 
+      `daily-summary-${new Date().toISOString().split('T')[0]}.md` :
+      `pr-description-${new Date().toISOString().split('T')[0]}.md`;
+    
+    fs.writeFileSync(fileName, content);
+    console.log(`\n✅ Résultat sauvegardé dans ${fileName}`);
   } catch (error) {
-    console.error(error);
+    console.error('❌ Erreur lors de la génération du contenu:', error.message);
   }
-
-  return Buffer.from(allHistory).toString("base64");
 }
 
-generateDailySum();
+async function main() {
+  const { choice } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'choice',
+      message: 'Que souhaitez-vous générer ?',
+      choices: [
+        { name: '📝 Résumé quotidien', value: 'daily' },
+        { name: '🔄 Description de PR', value: 'pr' }
+      ]
+    }
+  ]);
+
+  if (choice === 'daily') {
+    console.log('\n📝 Quelques questions pour enrichir votre résumé quotidien:');
+    const answers = await inquirer.prompt(DAILY_QUESTIONS);
+    await generateContent(true, answers);
+  } else {
+    await generateContent(false);
+  }
+}
+
+main().catch(error => {
+  console.error('❌ Erreur inattendue:', error.message);
+  process.exit(1);
+});
