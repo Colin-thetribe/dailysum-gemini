@@ -1,10 +1,25 @@
 {
-  "name": "dailysum",
+  "name": "flemmai",
   "version": "1.0.0",
-  "description": "",
+  "description": "Assistant IA pour la génération de résumés et PR",
   "main": "index.js",
+  "bin": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "pkg .",
+    "build:all": "pkg . --out-path=dist"
+  },
+  "pkg": {
+    "assets": [
+      "templates/**/*",
+      ".env"
+    ],
+    "targets": [
+      "node18-linux-x64",
+      "node18-macos-x64",
+      "node18-win-x64"
+    ],
+    "outputPath": "dist"
   },
   "author": "",
   "license": "ISC",
@@ -12,5 +27,8 @@
     "@google/generative-ai": "^0.1.0",
     "dotenv": "^16.0.0",
     "inquirer": "^8.2.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
   }
 }

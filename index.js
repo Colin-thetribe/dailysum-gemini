@@ -9,7 +9,7 @@ const { getGitHistory, getCurrentBranchGitHistory } = require('./gitUtils');
 const { getDailysum, getPR } = require('./fileUtils');
 
 // Configuration
-dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config({ path: getAssetPath('.env') });
 const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
@@ -20,6 +20,15 @@ if (!API_KEY) {
 // Parse command line arguments
 const args = process.argv.slice(2);
 const hasFlag = flag => args.includes(flag);
+
+function getAssetPath(relativePath) {
+  // En développement
+  if (process.pkg === undefined) {
+    return path.join(__dirname, relativePath);
+  }
+  // Dans le binaire
+  return path.join(process.cwd(), relativePath);
+}
 
 async function generateContent(isDailySum, userAnswers = {}) {
   // Filter out empty or negative answers
