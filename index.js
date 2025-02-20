@@ -16,18 +16,26 @@ const isPR = args.includes("--pr");
 const isDailySum = args.includes("--dailyseum");
 
 console.log("PROJECTS_TO_SUMMARIZE", PROJECTS_TO_SUMMARIZE);
-
 if (!isPR && !isDailySum) {
   console.error(
     "Je sais que t'as la flemme, mais précise au moins --pr ou --dailyseum"
   );
   process.exit(1);
 }
-
 const DAILY_SUM_PROMPT =
-  "A partir de ces fichiers fournies represenant mon bash history, mon git diff et mon git log, genere moi le résumé de ma journée sous la forme du deuxieme fichier en français";
+  "À partir des fichiers fournis représentant mon historique de commandes Bash, mon git diff et mon git log, génère-moi le résumé de ma journée sous la forme du deuxième fichier en français.";
+
 const PR_PROMPT =
-  "A partir de ces fichiers fournies represenant mon bash history, mon git diff et mon git log, genere moi la pull request github sous la forme du deuxieme fichier en français en mettant de jolie petites icones";
+  "À partir des fichiers fournis représentant mon historique de commandes Bash, mon git diff et mon git log, génère-moi une description de pull request pour GitHub, rédigée en français et bien structurée. \
+  Formate le résultat de manière lisible, en t'inspirant de la structure du deuxième fichier fourni. \
+  Ajoute des petites icônes pertinentes pour rendre la présentation plus attractive. \
+  Assure-toi que la description contient : \
+  - Un résumé clair et concis des modifications apportées. \
+  - Une liste des principales améliorations, corrections de bugs ou ajouts de fonctionnalités. \
+  - Une section expliquant pourquoi ces changements sont nécessaires. \
+  - Un éventuel rappel des tickets ou issues liés. \
+  - Une section pour les tests effectués. \
+  Utilise un ton professionnel mais engageant.";
 
 async function generateDailySum() {
   const genAI = new GoogleGenerativeAI(API_KEY);
