@@ -57,8 +57,35 @@ const DAILY_QUESTIONS = [
   }
 ];
 
+const CODE_REVIEW_PROMPT = `Analyse le code fourni (git diff) et génère une revue de code constructive en français.
+Structure ta réponse en Markdown avec les sections suivantes:
+
+## 📋 Résumé des modifications
+
+## ✨ Points positifs
+- Liste des bonnes pratiques et choix pertinents
+
+## 🔍 Suggestions d'amélioration
+- Liste des points à améliorer, avec exemples si possible
+
+## 🛡️ Sécurité et Performance
+- Points d'attention sur la sécurité et les performances
+
+## 💭 Remarques générales
+- Autres commentaires constructifs
+
+Sois précis dans tes suggestions et fournis des exemples de code quand c'est pertinent.
+Concentre-toi sur:
+- La qualité du code
+- Les bonnes pratiques
+- La maintenabilité
+- La performance
+- La sécurité
+`;
+
 module.exports = {
   PR_PROMPT,
   DAILY_SUM_PROMPT,
-  DAILY_QUESTIONS
+  DAILY_QUESTIONS,
+  CODE_REVIEW_PROMPT
 }; 

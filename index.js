@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
 
-const { PR_PROMPT, DAILY_SUM_PROMPT, DAILY_QUESTIONS } = require('./prompts');
+const { PR_PROMPT, DAILY_SUM_PROMPT, DAILY_QUESTIONS, CODE_REVIEW_PROMPT } = require('./prompts');
 const { getGitHistory, getCurrentBranchGitHistory } = require('./gitUtils');
 const { getDailysum, getPR } = require('./fileUtils');
 
@@ -88,7 +88,53 @@ async function promptQuestions() {
   return inquirer.prompt(DAILY_QUESTIONS);
 }
 
+async function generateCodeReview() {
+  const genAI = new GoogleGenerativeAI(API_KEY);
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+  try {
+    // Get diff against default branch
+    const gitDiff = getCurrentBranchGitHistory();
+    
+    if (!gitDiff) {
+      console.error('❌ Aucune modification détectée dans la branche courante');
+      return;
+    }
+
+    const request = {
+      contents: [{
+        parts: [
+          { text: CODE_REVIEW_PROMPT },
+          {
+            inline_data: {
+              mime_type: 'text/plain',
+              data: gitDiff
+            }
+          }
+        ]
+      }]
+    };
+
+    const result = await model.generateContent(request);
+    const content = result.response.text();
+    console.log(content);
+
+    // Save review to file
+    const fileName = `code-review-${new Date().toISOString().split('T')[0]}.md`;
+    fs.writeFileSync(fileName, content);
+    console.log(`\n✅ Revue de code sauvegardée dans ${fileName}`);
+  } catch (error) {
+    console.error('❌ Erreur lors de la génération de la revue:', error.message);
+  }
+}
+
 async function main() {
+  // Add new review flag check
+  if (hasFlag('--review')) {
+    await generateCodeReview();
+    return;
+  }
+
   // Check for command line arguments first
   if (hasFlag('--pr')) {
     await generateContent(false);
@@ -130,6 +176,7 @@ Usage: node index.js [options]
 Options:
   --dailyseum  Générer un résumé quotidien rapide (sans questionnaire)
   --pr         Générer une description de PR
+  --review     Générer une revue de code de la branche courante
   --help,-h    Afficher cette aide
 
 Sans option, lance le mode interactif avec questionnaire.
