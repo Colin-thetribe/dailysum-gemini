@@ -66,15 +66,38 @@ Structure ta réponse en Markdown avec les sections suivantes:
 - Liste des bonnes pratiques et choix pertinents
 
 ## 🔍 Suggestions d'amélioration
-- Liste des points à améliorer, avec exemples si possible
+Pour chaque suggestion, fournis:
+- Une description du problème
+- Un exemple de code actuel (si pertinent)
+- La solution proposée dans un bloc de code
+- Une explication de l'amélioration
+
+Exemple de format:
+\`\`\`javascript:path/to/file.js
+// Code actuel
+function example() {
+  // ...
+}
+
+// Code suggéré
+function betterExample() {
+  // ...
+}
+\`\`\`
 
 ## 🛡️ Sécurité et Performance
 - Points d'attention sur la sécurité et les performances
+- Inclure des exemples de code pour les corrections suggérées
 
 ## 💭 Remarques générales
 - Autres commentaires constructifs
 
-Sois précis dans tes suggestions et fournis des exemples de code quand c'est pertinent.
+Sois précis dans tes suggestions et assure-toi de:
+- Fournir le chemin du fichier pour chaque bloc de code
+- Inclure des commentaires explicatifs dans les exemples de code
+- Expliquer pourquoi les changements sont bénéfiques
+- Mettre en évidence les impacts potentiels des modifications
+
 Concentre-toi sur:
 - La qualité du code
 - Les bonnes pratiques
@@ -83,9 +106,45 @@ Concentre-toi sur:
 - La sécurité
 `;
 
+const CURSOR_PROMPT = `À partir de la revue de code précédente, génère des instructions claires et précises pour Cursor AI.
+Structure la réponse en Markdown avec:
+
+## 🤖 Instructions pour Cursor AI
+
+Pour chaque fichier à modifier, fournis un bloc d'instructions comme ceci:
+
+\`\`\`cursor
+In file: path/to/file.js
+
+Find and replace the following code:
+// Current implementation
+function example() {
+  // ...
+}
+
+With:
+// Improved implementation
+function betterExample() {
+  // ...
+}
+
+Then:
+1. Add error handling...
+2. Improve performance by...
+3. ...
+\`\`\`
+
+Assure-toi que:
+- Les instructions sont précises et séquentielles
+- Le contexte est clairement défini
+- Les modifications sont groupées par fichier
+- Les changements sont expliqués étape par étape
+`;
+
 module.exports = {
   PR_PROMPT,
   DAILY_SUM_PROMPT,
   DAILY_QUESTIONS,
-  CODE_REVIEW_PROMPT
+  CODE_REVIEW_PROMPT,
+  CURSOR_PROMPT
 }; 

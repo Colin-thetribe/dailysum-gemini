@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
 
-const { PR_PROMPT, DAILY_SUM_PROMPT, DAILY_QUESTIONS, CODE_REVIEW_PROMPT } = require('./prompts');
+const { PR_PROMPT, DAILY_SUM_PROMPT, DAILY_QUESTIONS, CODE_REVIEW_PROMPT, CURSOR_PROMPT } = require('./prompts');
 const { getGitHistory, getCurrentBranchGitHistory } = require('./gitUtils');
 const { getDailysum, getPR } = require('./fileUtils');
 
@@ -101,7 +101,8 @@ async function generateCodeReview() {
       return;
     }
 
-    const request = {
+    // Generate code review
+    const reviewRequest = {
       contents: [{
         parts: [
           { text: CODE_REVIEW_PROMPT },
@@ -115,14 +116,43 @@ async function generateCodeReview() {
       }]
     };
 
-    const result = await model.generateContent(request);
-    const content = result.response.text();
-    console.log(content);
+    const reviewResult = await model.generateContent(reviewRequest);
+    const reviewContent = reviewResult.response.text();
 
-    // Save review to file
+    // Generate Cursor AI instructions based on the review
+    const cursorRequest = {
+      contents: [{
+        parts: [
+          { text: CURSOR_PROMPT },
+          { text: reviewContent },
+          {
+            inline_data: {
+              mime_type: 'text/plain',
+              data: gitDiff
+            }
+          }
+        ]
+      }]
+    };
+
+    const cursorResult = await model.generateContent(cursorRequest);
+    const cursorContent = cursorResult.response.text();
+
+    // Combine both contents with a clear separator
+    const finalContent = `${reviewContent}
+
+---
+
+# Instructions pour Cursor AI
+
+${cursorContent}`;
+
+    console.log(finalContent);
+
+    // Save to file
     const fileName = `code-review-${new Date().toISOString().split('T')[0]}.md`;
-    fs.writeFileSync(fileName, content);
-    console.log(`\n✅ Revue de code sauvegardée dans ${fileName}`);
+    fs.writeFileSync(fileName, finalContent);
+    console.log(`\n✅ Revue de code et instructions Cursor sauvegardées dans ${fileName}`);
   } catch (error) {
     console.error('❌ Erreur lors de la génération de la revue:', error.message);
   }
