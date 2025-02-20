@@ -106,10 +106,13 @@ function getCurrentBranchGitHistory() {
 
   const gitDiffCurrentBranchDevelop = execSync(
     `cd ${PROJECTS_TO_SUMMARIZE} && git diff develop`,
-    { encoding: "utf8" }
+    { encoding: "utf8", maxBuffer: 10048577 }
   );
 
-  return Buffer.from(gitDiffCurrentBranchDevelop).toString("base64");
+  //substr to 800000 tokens
+  const amputed = gitDiffCurrentBranchDevelop.substring(0, 800000);
+
+  return Buffer.from(amputed).toString("base64");
 }
 
 function getGitHistory() {
