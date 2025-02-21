@@ -1,8 +1,8 @@
 # 🦥 FlemmAI - Votre Assistant Anti-Flemme
 
-![Build Status](https://github.com/Colin-thetribe/flemmai/workflows/Build%20FlemmAI/badge.svg)
-![Latest Release](https://img.shields.io/github/v/release/Colin-thetribe/flemmai)
-![License](https://img.shields.io/github/license/Colin-thetribe/flemmai)
+![Build Status](https://github.com/Colin-thetribe/dailysum-gemini/actions/workflows/build.yml/badge.svg)
+![Latest Release](https://img.shields.io/github/v/release/Colin-thetribe/dailysum-gemini)
+![License](https://img.shields.io/github/license/Colin-thetribe/dailysum-gemini)
 
 > Parce que même la flemme mérite d'être automatisée.
 
